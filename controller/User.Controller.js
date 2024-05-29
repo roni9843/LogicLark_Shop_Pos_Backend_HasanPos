@@ -112,23 +112,28 @@ const createUserAndDueController = async (req, res, next) => {
  * * find the user by first 3 number
  */
 
+
 const findBy1stNumberController = async (req, res, next) => {
   try {
-    let { firstDigits } = req.body; // Assuming you pass firstDigits in the request body
+    const { firstDigits } = req.body; // Assuming you pass firstDigits in the request body
+
     // Ensure at least 4 characters are provided
-    if (firstDigits.length < 4) {
+    if (!firstDigits || firstDigits.length < 4) {
       return res.status(400).json({ error: "Provide at least 4 characters." });
     }
 
     // Construct regex pattern based on the provided digits
-    const regexPattern = `^${firstDigits.substring(0, 4)}`;
+    const regexPattern = new RegExp(`^${firstDigits.substring(0, 4)}`);
 
-    // Find users whose phone numbers match the provided first four or five digits
-
+    // Retrieve the invoice details
     const inVoice = await getInvoiceIdController();
 
+    // Find users whose phone numbers or usernames match the provided first four digits
     const users = await User.find({
-      user_phone: { $regex: regexPattern },
+      $or: [
+        { user_phone: { $regex: regexPattern } },
+        { user_name: { $regex: regexPattern, $options: "i" } }, // Case-insensitive search for user_name
+      ],
     });
 
     res.json({ users, inVoice });
@@ -136,6 +141,7 @@ const findBy1stNumberController = async (req, res, next) => {
     next(error);
   }
 };
+
 
 const findAllPhoneWithDueController = async (req, res, next) => {
   try {
